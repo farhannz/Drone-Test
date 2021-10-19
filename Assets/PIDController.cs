@@ -38,7 +38,16 @@ public class PIDController
         return output;
     }
 
+    public float GetOutputPID(Vector4 gains, float error)
+    {
+        this.Kp = gains.x;
+        this.Ki = gains.y;
+        this.Kd = gains.z;
+        this.antiWindUpCutOff = gains.w;
+        float output = CalculateOutputPID(error);
 
+        return output;
+    }
     private float CalculateOutputPID(float error)
     {
         float output = 0f;

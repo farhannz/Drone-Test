@@ -602,15 +602,15 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1003123061}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.93, y: 0.57, z: 14.7}
+  m_LocalRotation: {x: 0.0017214802, y: 0.000008463906, z: 0.001076154, w: 0.999998}
+  m_LocalPosition: {x: 0.9305383, y: 0.178, z: 14.699184}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 1272392}
   - {fileID: 1011642091}
   m_Father: {fileID: 0}
   m_RootOrder: 1
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0.197, y: 0.001, z: 0.123}
 --- !u!54 &1003123063
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -652,10 +652,10 @@ MonoBehaviour:
   pitchDir: 0
   yawDir: 0
   rollDir: 0
-  pitchGains: {x: 0, y: 0, z: 0}
-  rollGains: {x: 0, y: 0, z: 0}
+  pitchGains: {x: 0.005, y: 0.05, z: 0.2}
+  rollGains: {x: 0.005, y: 0.05, z: 0.2}
   yawGains: {x: 0, y: 0, z: 0}
-  altitudeGains: {x: 0, y: 0, z: 0}
+  altitudeGains: {x: 1, y: 1, z: 1, w: 50}
   altitude: 0
   manual: 1
 --- !u!82 &1003123065
