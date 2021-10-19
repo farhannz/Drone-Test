@@ -17,7 +17,7 @@ public class Propeller : MonoBehaviour
     public float leftAnalogDeadZone = .3f;
     public float rightAnalogDeadZone = .3f;
     private float initialTorque;
-    AudioSource audio;
+    AudioSource audios;
     private void Awake()
     {
         initialTorque = torque[0];
@@ -25,7 +25,7 @@ public class Propeller : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        audio = GetComponent<AudioSource>();
+        audios = GetComponent<AudioSource>();
     }
 
     // Update is called once per frame
@@ -117,17 +117,17 @@ public class Propeller : MonoBehaviour
 
         if (verticalAxis > leftAnalogDeadZone)
         {
-            audio.pitch = Mathf.Lerp(audio.pitch, 1.2f, 1f * Time.deltaTime);
+            GetComponent<AudioSource>().pitch = Mathf.Lerp(GetComponent<AudioSource>().pitch, 1.2f, 1f * Time.deltaTime);
             DroneUp(verticalAxis);
         }
         else if (verticalAxis < -leftAnalogDeadZone)
         {
-            audio.pitch = Mathf.Lerp(audio.pitch, .9f, 1f * Time.deltaTime);
+            GetComponent<AudioSource>().pitch = Mathf.Lerp(GetComponent<AudioSource>().pitch, .9f, 1f * Time.deltaTime);
             DroneUp(verticalAxis);
         }
         else if (verticalAxis >= -leftAnalogDeadZone && verticalAxis <= leftAnalogDeadZone)
         {
-            audio.pitch = Mathf.Lerp(audio.pitch, 1f, 1f * Time.deltaTime);
+            GetComponent<AudioSource>().pitch = Mathf.Lerp(GetComponent<AudioSource>().pitch, 1f, 1f * Time.deltaTime);
             DroneUp(verticalAxis);
         }
 

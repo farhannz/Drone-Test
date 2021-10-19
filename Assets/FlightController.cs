@@ -19,13 +19,13 @@ public class FlightController : MonoBehaviour
     public float yawSpeed;
 
     [SerializeField]
-    private float thrust;
+    private float thrust = 0f;
     [SerializeField]
-    private float pitchDir;
+    private float pitchDir = 0f;
     [SerializeField]
-    private float yawDir;
+    private float yawDir = 0f;
     [SerializeField]
-    private float rollDir;
+    private float rollDir = 0f;
     // Drone Rigidbody
     Rigidbody droneRb;
 
@@ -63,7 +63,7 @@ public class FlightController : MonoBehaviour
         //GetPitchError();
         InputControls(); // Reading the controller input
 
-        MotorMixingAlgorithm();
+        MotorMixingAlgorithm(); // Motor Mixing Algorithm for the propeller 
 
     }
 
@@ -75,10 +75,8 @@ public class FlightController : MonoBehaviour
         float pitchError = GetPitchError(pitchDir * maxPitchAngle);
 
         // In Unity Coordinate System, Left is positive and Right is negative
-        // Output from GetRollError, Left is Negative and Right is Positive
-        // Thus we multiply it by -1 to change it to unity coordinate system
         // Direction range is [-1,1]
-        float rollError = GetRollError(rollDir * maxRollAngle) *-1f;
+        float rollError = GetRollError(rollDir * maxRollAngle);
         float altitudeError = GetAltitudeError(altitude);
 
         float altitudePIDOutput = altitudePID.GetOutputPID(altitudeGains, altitudeError);
@@ -108,6 +106,16 @@ public class FlightController : MonoBehaviour
         AddForceToPropeller(propellerBL, propellerForceBL);
         AddForceToPropeller(propellerBR, propellerForceBR);
 
+
+        // yaw
+
+        float yawError = droneRb.angularVelocity.y;
+
+        float yawPIDOutput = yawPID.GetOutputPID(yawGains, yawError);
+
+        droneRb.AddTorque(Vector3.up * yawDir * yawSpeed);
+
+        droneRb.AddTorque(Vector3.up * yawPIDOutput * -1f);
     }
 
 
@@ -116,19 +124,9 @@ public class FlightController : MonoBehaviour
         if (manual)
         {
             thrust = Input.GetAxis("Vertical"); // If manual control is used
-            //if (Input.GetAxis("Vertical")>0)
-            //{
-            //    thrust += Input.GetAxis("Vertical");
-            //}
-            //if (Input.GetAxis("Vertical") < 0)
-            //{
-            //    thrust += Input.GetAxis("Vertical");
-            //}
-            //thrust = Mathf.Clamp(thrust, 0f, maxForce);
-
             yawDir = Input.GetAxis("Horizontal");
             pitchDir = Input.GetAxis("Pitch");
-            rollDir = Input.GetAxis("Roll");
+            rollDir = Input.GetAxis("Roll") *-1f; // Due to unity coordinate system, Left = Positive, Right = Negative
         }
     }
 
@@ -149,11 +147,12 @@ public class FlightController : MonoBehaviour
         float error;
         RaycastHit hit;
         Vector3 pos = transform.position;
-        Physics.Raycast(pos,Vector3.down,out hit);
+        LayerMask layerMask = 1 << 6;
+        Physics.Raycast(pos,Vector3.down,out hit,150f,layerMask);
 
         error = desired - hit.distance;
-        Debug.DrawRay(pos, Vector3.down, Color.black);
-        Debug.Log(error);
+        Debug.DrawRay(pos, Vector3.down*(2f+15f), Color.black);
+        //Debug.Log(error);
         return error;
     }
 
@@ -166,7 +165,6 @@ public class FlightController : MonoBehaviour
 
         //Make sure the angle is between 0 and 360
         xAngle = WrapAngle(xAngle);
-
         //This angle going from 0 -> 360 when pitching forward
         //So if angle is > 180 then it should move from 0 to 180 if pitching back
         if (xAngle > 180f && xAngle < 360f)
@@ -177,7 +175,8 @@ public class FlightController : MonoBehaviour
             xAngle *= -1f;
         }
 
-        error = Mathf.Clamp(desired-xAngle, -maxPitchAngle, maxPitchAngle);
+        error = Mathf.Clamp(desired - xAngle, -maxPitchAngle, maxPitchAngle);
+        //error = desired - xAngle;
 
         //Debug.Log(rotation + " " + error);
         return error;
@@ -191,7 +190,7 @@ public class FlightController : MonoBehaviour
 
         //Make sure the angle is between 0 and 360
         zAngle = WrapAngle(zAngle);
-
+        //desired = WrapAngle(desired);
         if (zAngle > 180f && zAngle < 360f)
         {
             zAngle = 360f - zAngle;
@@ -199,9 +198,8 @@ public class FlightController : MonoBehaviour
             //-1 so we know if we are rolling left or right
             zAngle *= -1f;
         }
-
         error = Mathf.Clamp(desired - zAngle, -maxRollAngle, maxRollAngle);
-
+        //error = desired - zAngle;
         //Debug.Log(rotation + " " + error);
         return error;
     }
@@ -214,5 +212,11 @@ public class FlightController : MonoBehaviour
         //+360 moves negative values to the positive range, and positive ones to > 360
         //the final % 360 caps everything to 0...360
         return ((inputAngle % 360f) + 360f) % 360f;
+    }
+    static public float ModularClamp(float val, float min, float max, float rangemin = -180f, float rangemax = 180f)
+    {
+        var modulus = Mathf.Abs(rangemax - rangemin);
+        if ((val %= modulus) < 0f) val += modulus;
+        return Mathf.Clamp(val + Mathf.Min(rangemin, rangemax), min, max);
     }
 }
