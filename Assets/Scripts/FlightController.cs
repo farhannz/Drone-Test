@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 public class FlightController : MonoBehaviour
 {
 
@@ -9,15 +10,25 @@ public class FlightController : MonoBehaviour
     public GameObject propellerFR;
     public GameObject propellerBL;
     public GameObject propellerBR;
-
+    
+    public Toggle isManual; 
 
     [Header("Internal")]
-    public float maxForce;
+    public float thrustFactor = 1.4f;
     public float maxPitchAngle; // Degree
     public float maxRollAngle;  // Degree
     public float moveSpeed;
     public float yawSpeed;
 
+    [Header("Turbulence")]
+    public float minTurbForce = 0f;
+    public float maxTurbForce = 2f;
+    [Range(0f,1f)]
+    public float turbSlider;
+    
+    public float finalValue;
+
+    [Header("Direction")]
     [SerializeField]
     private float thrust = 0f;
     [SerializeField]
@@ -27,17 +38,19 @@ public class FlightController : MonoBehaviour
     [SerializeField]
     private float rollDir = 0f;
     // Drone Rigidbody
+    
     Rigidbody droneRb;
+    private float maxForce; // Max force for each propellers
 
     // PID Gains
     // {Kp, Ki, Kd}
     // { x,  y,  z}
-    public Vector3 pitchGains;
-    public Vector3 rollGains;
+    public Vector4 pitchGains;
+    public Vector4 rollGains;
     public Vector3 yawGains;
     public Vector4 altitudeGains; // {Kp, Ki, Kd, Anti WindUp Cutoff}
-
-    public float altitude; // meter
+    public float desiredAltitude; // meter
+    // public float altitude; // meter
     public bool manual = true;
 
 
@@ -46,11 +59,16 @@ public class FlightController : MonoBehaviour
     private PIDController yawPID;
     private PIDController altitudePID;
 
+    // private bool Flag = false;
+    float totalTimeElapsed = 0f;
 
+
+
+    
     void Start()
     {
         droneRb = GetComponent<Rigidbody>();
-
+        maxForce = 6f * droneRb.mass;
         pitchPID = new PIDController();
         rollPID = new PIDController();
         yawPID = new PIDController();
@@ -59,53 +77,81 @@ public class FlightController : MonoBehaviour
 
     void FixedUpdate()
     {
+        finalValue = Mathf.Lerp(minTurbForce,maxTurbForce,turbSlider);
         //GetAltitudeError(altitude);
         //GetPitchError();
         InputControls(); // Reading the controller input
 
-        MotorMixingAlgorithm(); // Motor Mixing Algorithm for the propeller 
-
+        MotorMixingAlgorithm(); // Motor Mixing Algorithm for the propeller
+        totalTimeElapsed += Time.fixedDeltaTime;
+        Debug.Log(droneRb.transform.position.y +","+ totalTimeElapsed +";");
+        // Debug.LogFormat("{0},{1}\n",droneRb.transform.position.y,totalTimeElapsed);
     }
 
-    
+    // void LateUpdate(){
+    //     if(manual){
+            
+    //     }
+    // }
     void MotorMixingAlgorithm()
     {
         // Getting the pitch error of the desired pitch angle
         // Direction range is [-1,1]
+        AddForceToPropeller(propellerFL, (finalValue * Random.Range(-1,1)));
+        AddForceToPropeller(propellerFR, (finalValue * Random.Range(-1,1)));
+        AddForceToPropeller(propellerBL, (finalValue * Random.Range(-1,1)));
+        AddForceToPropeller(propellerBR, (finalValue * Random.Range(-1,1)));
         float pitchError = GetPitchError(pitchDir * maxPitchAngle);
 
         // In Unity Coordinate System, Left is positive and Right is negative
         // Direction range is [-1,1]
         float rollError = GetRollError(rollDir * maxRollAngle);
-        float altitudeError = GetAltitudeError(altitude);
-
+        float altitudeError = GetAltitudeError(desiredAltitude);
         float altitudePIDOutput = altitudePID.GetOutputPID(altitudeGains, altitudeError);
         float pitchPIDOutput = pitchPID.GetOutputPID(pitchGains, pitchError);
         float rollPIDOutput = rollPID.GetOutputPID(rollGains, rollError);
-
-        Debug.Log("pitchError : " + pitchError + " rollError : " + rollError + " altitudeError : " + altitudeError);
-        Debug.Log("pitchPidOutput : " + pitchPIDOutput + " rollPIDOutput : "+ rollPIDOutput + " altitudePIDOutput : " + altitudePIDOutput);
-
+        
+        // Debug.Log("pitchError : " + pitchError + " rollError : " + rollError + " altitudeError : " + altitudeError);
+        // Debug.Log("pitchPidOutput : " + pitchPIDOutput + " rollPIDOutput : "+ rollPIDOutput + " altitudePIDOutput : " + altitudePIDOutput);
+        altitudePIDOutput = Mathf.Clamp(altitudePIDOutput,0.5f*droneRb.mass,maxForce);
+        pitchPIDOutput    = Mathf.Clamp(pitchPIDOutput,-maxForce,maxForce);
+        rollPIDOutput     = Mathf.Clamp(rollPIDOutput,-maxForce,maxForce);
         // FL
-        float propellerForceFL = thrust + altitudePIDOutput - pitchPIDOutput - rollPIDOutput;
+        
+        float propellerForceFL = thrust*thrustFactor + altitudePIDOutput - pitchPIDOutput - rollPIDOutput ;
 
         // FR
-        float propellerForceFR = thrust + altitudePIDOutput - pitchPIDOutput + rollPIDOutput;
+        float propellerForceFR = thrust*thrustFactor + altitudePIDOutput - pitchPIDOutput + rollPIDOutput ;
 
         // BL
-        float propellerForceBL = thrust + altitudePIDOutput + pitchPIDOutput - rollPIDOutput;
+        float propellerForceBL = thrust*thrustFactor + altitudePIDOutput + pitchPIDOutput - rollPIDOutput ;
 
         // BR
-        float propellerForceBR = thrust + altitudePIDOutput + pitchPIDOutput + rollPIDOutput;
+        float propellerForceBR = thrust*thrustFactor + altitudePIDOutput + pitchPIDOutput + rollPIDOutput ;
+    
 
 
+        // Rotation speed of propellers
+        // propellerFL.Rotate.rotationSpeed
+        Rotate FL = propellerFL.GetComponent<Rotate>();
+        FL.rotationSpeed = propellerForceFL;
+        Rotate FR = propellerFR.GetComponent<Rotate>();
+        FR.rotationSpeed = -propellerForceFR;
+        Rotate BR = propellerBR.GetComponent<Rotate>();
+        BR.rotationSpeed = propellerForceBR;
+        Rotate BL = propellerBL.GetComponent<Rotate>();
+        BL.rotationSpeed = -propellerForceBL;
+        
         Vector4 forces = new Vector4(propellerForceFL, propellerForceFR, propellerForceBL, propellerForceBR);
-        Debug.Log(forces);
+        // Debug.Log(forces);
         AddForceToPropeller(propellerFL, propellerForceFL);
         AddForceToPropeller(propellerFR, propellerForceFR);
         AddForceToPropeller(propellerBL, propellerForceBL);
         AddForceToPropeller(propellerBR, propellerForceBR);
 
+        
+
+        
 
         // yaw
 
@@ -121,9 +167,13 @@ public class FlightController : MonoBehaviour
 
     void InputControls()
     {
+        manual = isManual.isOn;
         if (manual)
         {
             thrust = Input.GetAxis("Vertical"); // If manual control is used
+            if(thrust <= -.1f || thrust >= .1f){
+                desiredAltitude = droneRb.transform.position.y;
+            }
             yawDir = Input.GetAxis("Horizontal");
             pitchDir = Input.GetAxis("Pitch");
             rollDir = Input.GetAxis("Roll") *-1f; // Due to unity coordinate system, Left = Positive, Right = Negative
@@ -139,7 +189,7 @@ public class FlightController : MonoBehaviour
         droneRb.AddForceAtPosition(propellerUp * propellerForce, propellerPos);
 
         //Debug
-        Debug.DrawRay(propellerPos, propellerUp * (1f + 20f), Color.red);
+        Debug.DrawRay(propellerPos,( propellerUp * propellerForce).normalized, Color.red);
     }
 
     private float GetAltitudeError(float desired)
@@ -219,4 +269,5 @@ public class FlightController : MonoBehaviour
         if ((val %= modulus) < 0f) val += modulus;
         return Mathf.Clamp(val + Mathf.Min(rangemin, rangemax), min, max);
     }
+    
 }

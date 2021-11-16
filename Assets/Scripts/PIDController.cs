@@ -2,13 +2,18 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// Proportion - Integrator - Derivative Controller
+/// </summary>
 public class PIDController
 {
     //float error = 0f;
     float errorPrev = 0f;
     float errorSum = 0f;
 
-    public float antiWindUpCutOff = 20f;
+    // float firstPeak = 0f;
+    // float secondPeak = 0f;
+    public float antiWindUpCutOff = 40f;
     public float Kp = 0f;
     public float Ki = 0f;
     public float Kd = 0f;
@@ -52,6 +57,8 @@ public class PIDController
     {
         float output = 0f;
 
+
+
         // P - Proportional
         output += Kp * error;
 
@@ -73,9 +80,12 @@ public class PIDController
         return output;
     }
 
+
     public float AntiWindUpCutOff
     {
         get{return antiWindUpCutOff;}
         set{antiWindUpCutOff = value;}
     }
+
+
 }
