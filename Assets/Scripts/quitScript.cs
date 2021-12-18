@@ -8,14 +8,5 @@ public class quitScript : MonoBehaviour
     public void quitGame(){
         Application.Quit();
     }
-    void Start()
-    {
-        
-    }
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
 }
