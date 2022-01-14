@@ -84,7 +84,7 @@ public class FlightController : MonoBehaviour
 
         MotorMixingAlgorithm(); // Motor Mixing Algorithm for the propeller
         totalTimeElapsed += Time.fixedDeltaTime;
-        Debug.Log(droneRb.transform.position.y +","+ totalTimeElapsed +";");
+        // Debug.Log(droneRb.transform.position.y +","+ totalTimeElapsed +";");
         // Debug.LogFormat("{0},{1}\n",droneRb.transform.position.y,totalTimeElapsed);
     }
 
@@ -270,4 +270,11 @@ public class FlightController : MonoBehaviour
         return Mathf.Clamp(val + Mathf.Min(rangemin, rangemax), min, max);
     }
     
+    public void setMovement(float pitch, float roll){
+        pitchDir = pitch;
+        rollDir = roll *-1f; // Due to unity coordinate system, Left = Positive, Right = Negative
+    }
+
+    public float Pitch {get{return pitchDir;}}
+    public float Roll {get{return rollDir;}}
 }
