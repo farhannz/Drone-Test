@@ -1,6 +1,6 @@
 # Drone Obstacle Avoidance
  
-![](https://github.com/farhannz/Drone-Test/test.gif)
+![](https://github.com/farhannz/Drone-Test/raw/main/test.gif)
 
 
 Toolkit :
